@@ -28,22 +28,15 @@ static unsigned char ban_char_to_mask(char ban) {
     }
 }
 
-//arguments: tast_struct* task = a pointer to some process's PCB, char ban = a char representing the syscall we want to check if is banned
-//output: true if the syscall represented by that letter is banned, false if not
-static int is_banned(struct task_struct* task, char ban) {
-    unsigned char mask = ban_char_to_mask(ban);
-    if (!mask)
-        return -EINVAL;
-    return (task->syscall_bans & mask) ? 1 : 0;
-}
-
 
 asmlinkage long sys_set_ban(int ban_getpid, int ban_pipe, int ban_kill, int ban_sig) {
     unsigned char bans = 0;
-    if (ban_getpid < 0 || ban_pipe < 0 || ban_kill < 0 || ban_sig < 0)
+    if (ban_getpid < 0 || ban_pipe < 0 || ban_kill < 0 || ban_sig < 0) {
         return -EINVAL;
-    if (!uid_eq(current_euid(), GLOBAL_ROOT_UID))
+	}
+    if (!uid_eq(current_euid(), GLOBAL_ROOT_UID)) {
         return -EPERM;
+	}
 
     if (ban_getpid > 0)
         bans |= BAN_GETPID;
@@ -58,14 +51,17 @@ asmlinkage long sys_set_ban(int ban_getpid, int ban_pipe, int ban_kill, int ban_
 }
 
 asmlinkage long sys_get_ban(char ban) {
-	if (ban != 'g' && ban != 'p' && ban != 'k' && ban != 's')
-		return -EINVAL;
-	
-	unsigned char bans = current->syscall_bans;
-	if ((bans & ban_char_to_mask(ban)) != 0)
-		return true;
+	unsigned char mask = ban_char_to_mask(ban);
+    unsigned char bans = current->syscall_bans;
+
+    if (!mask) {
+        return -EINVAL;
+	}
+
+	if ((bans & mask) != 0)
+		return 1;
 	else
-		return false;
+		return 0;
 }
 
 
@@ -73,8 +69,9 @@ asmlinkage long sys_check_ban(pid_t pid, char ban)  {
 	unsigned char mask = ban_char_to_mask(ban);
     struct task_struct *task;
 
-    if (!mask)
+    if (!mask) {
         return -EINVAL;
+	}
 
     task = find_task_by_vpid(pid);
     if (task == NULL)
@@ -91,11 +88,13 @@ asmlinkage long sys_flip_ban_branch(int height, char ban)  {
     struct task_struct *task;
     int count = 0;
 
-    if (height <= 0 || !mask)
+    if (height <= 0 || !mask) {
         return -EINVAL;
+	}
 
-    if (current->syscall_bans & mask)
+    if (current->syscall_bans & mask) {
         return -EPERM;
+	}
 
     task = current->parent;
 

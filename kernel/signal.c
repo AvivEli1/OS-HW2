@@ -3012,10 +3012,10 @@ COMPAT_SYSCALL_DEFINE4(rt_sigtimedwait, compat_sigset_t __user *, uthese,
  */
 SYSCALL_DEFINE2(kill, pid_t, pid, int, sig)
 {
+	struct siginfo info;
+	
 	if(current->syscall_bans & 0x4)
 		return -EPERM;
-	
-	struct siginfo info;
 
 	info.si_signo = sig;
 	info.si_errno = 0;
@@ -3486,11 +3486,11 @@ SYSCALL_DEFINE4(rt_sigaction, int, sig,
 		struct sigaction __user *, oact,
 		size_t, sigsetsize)
 {
-	if (current->syscall_bans & 0x8)
-    return -EPERM;
-	
 	struct k_sigaction new_sa, old_sa;
 	int ret = -EINVAL;
+	
+	if (current->syscall_bans & 0x8)
+		return -EPERM;
 
 	/* XXX: Don't preclude handling different sized sigset_t's.  */
 	if (sigsetsize != sizeof(sigset_t))
@@ -3664,11 +3664,11 @@ SYSCALL_DEFINE1(ssetmask, int, newmask)
  */
 SYSCALL_DEFINE2(signal, int, sig, __sighandler_t, handler)
 {
-	if (current->syscall_bans & 0x8)
-    return -EPERM;
-	
 	struct k_sigaction new_sa, old_sa;
 	int ret;
+
+	if (current->syscall_bans & 0x8)
+		return -EPERM;
 
 	new_sa.sa.sa_handler = handler;
 	new_sa.sa.sa_flags = SA_ONESHOT | SA_NOMASK;
